@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Withdrawal Details Generator (Editable Address)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/html-to-image"></script>
+  <style>
+    body {
+      background-color: #000;
+    }
+
+textarea {
+  overflow: hidden; /* 禁止滚动条 */
+  resize: none;     /* 禁止用户拖拽 */
+}
+    input.no-underline,
+    textarea.no-underline {
+      border: none !important;
+      outline: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    textarea {
+      appearance: none;
+    }
+
+    textarea::selection {
+      background-color: rgba(59, 130, 246, 0.5);
+    }
+
+    .status-bar {
+      height: 44px;
+      padding: 0 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .battery {
+      position: relative;
+      width: 22px;
+      height: 10px;
+      border: 1px solid #fff;
+      border-radius: 2px;
+      margin-left: 4px;
+    }
+
+    .battery::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 1px;
+      transform: translateY(-50%);
+      width: 18px;
+      height: 7px;
+      background: #fff;
+      border-radius: 1px;
+    }
+
+    .battery::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: -3px;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 4px;
+      background: #fff;
+      border-radius: 0 1px 1px 0;
+    }
+
+    .cellular-bars {
+      display: flex;
+      align-items: flex-end;
+      height: 10px;
+    }
+
+    .bar {
+      width: 3px;
+      background: #fff;
+      margin-right: 1px;
+      border-radius: 1px;
+    }
+
+    .bar:nth-child(1) {
+      height: 5px;
+    }
+
+    .bar:nth-child(2) {
+      height: 7px;
+    }
+
+    .bar:nth-child(3) {
+      height: 9px;
+    }
+
+    .bar:nth-child(4) {
+      height: 11px;
+    }
+
+    .copy-success {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .copy-success.show {
+      opacity: 1;
+    }
+
+    #time {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    #time:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+
+<body class="bg-black text-white flex flex-col justify-center items-center min-h-screen space-y-6">
+
+  <div id="copySuccess" class="copy-success">Copied to clipboard!</div>
+
+  <div class="flex space-x-4 mb-4">
+    <div>
+      <label class="block mb-1 text-gray-300">Network</label>
+      <select id="networkSelect" class="bg-gray-800 text-white p-2 rounded w-28">
+        <option value="Trc20">Trc20</option>
+        <option value="Erc20">Erc20</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block mb-1 text-gray-300">Currency</label>
+      <select id="currencySelect" class="bg-gray-800 text-white p-2 rounded w-28">
+        <option value="USDT">USDT</option>
+        <option value="USDC">USDC</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block mb-1 text-gray-300">Gas Fee</label>
+      <input id="networkFeeInput" class="bg-gray-800 text-white p-2 pl-2 rounded w-24 text-left" value="1.00" />
+    </div>
+
+    <div>
+      <label class="block mb-1 text-gray-300">Status Bar Time</label>
+      <input id="statusBarTimeInput" class="bg-gray-800 text-white p-2 pl-2 rounded w-24 text-left" value="23:27" placeholder="HH:MM" />
+    </div>
+  </div>
+
+  <div id="phoneView" class="bg-black text-white relative shadow-lg"
+    style="width: 428px; height: 926px; border: 1px solid #333;">
+
+    <div class="status-bar">
+      <span id="time" class="text-white text-sm font-semibold pl-10 cursor-pointer" title="Click to edit">23:27</span>
+      <div class="flex items-center pr-8">
+        <div class="cellular-bars mr-1">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+        <div class="flex items-center">
+          <div class="battery"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between px-8 py-4">
+      <span class="cursor-pointer">←</span>
+      <h1 class="text-lg font-medium">Withdrawal Details</h1>
+      <span class="text-xl select-none">🎧</span>
+    </div>
+
+    <div class="text-center py-6">
+      <input id="amountTop"
+        class="text-3xl font-medium mb-2 bg-black text-center border-b border-gray-600 focus:outline-none no-underline"
+        value="-50 USDT">
+      <div class="flex items-center justify-center space-x-2 mt-2">
+        <div class="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center text-white text-xs">✔</div>
+        <span class="text-green-500 font-medium">Completed</span>
+      </div>
+    </div>
+
+    <div class="px-6 text-center text-gray-400 text-sm leading-relaxed mb-6">
+      Crypto transferred out of Binance. Please contact the recipient platform for your transaction receipt.
+    </div>
+
+    <div class="px-6 mb-8 text-center">
+      <a href="#" class="text-yellow-500 text-sm">Why hasn't my withdrawal arrived?</a>
+    </div>
+
+    <div class="px-8 space-y-5">
+      <div class="flex justify-between items-center">
+        <span class="text-gray-400 text-sm">Network</span>
+        <span id="networkType" class="text-white font-medium text-sm">Trc20</span>
+      </div>
+
+      <!-- 地址变为可编辑 -->
+      <div class="flex justify-between items-start">
+        <span class="text-gray-400 text-sm">Address</span>
+        <div class="flex flex-col items-end space-y-1 w-3/5">
+          <textarea id="address"
+            class="text-white text-xs break-all no-underline w-full resize-none bg-transparent text-right leading-relaxed border-b border-gray-600"
+            rows="2" placeholder="Enter wallet address here" style="max-height: 100px;"></textarea>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-start">
+        <span class="text-gray-400 text-sm">Txid</span>
+        <div class="flex items-center space-x-2 max-w-[60%]">
+          <span id="txid" class="text-white text-xs break-all cursor-pointer hover:text-blue-400" title="Click to copy">Loading...</span>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <span class="text-gray-400 text-sm">Amount</span>
+        <span id="amountDisplay" class="text-white font-medium text-sm">0 USDT</span>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <span class="text-gray-400 text-sm" id="feeLabel">Network fee</span>
+        <span id="networkFee" class="text-white font-medium text-sm">1.00</span>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <span class="text-gray-400 text-sm">Withdrawal Wallet</span>
+        <span class="text-white font-medium text-sm">Spot Wallet</span>
+      </div>
+
+      <div class="flex justify-between items-center">
+        <span class="text-gray-400 text-sm">Date</span>
+        <input id="date" class="text-white font-medium text-sm text-right no-underline" value="">
+      </div>
+    </div>
+
+    <div class="px-6 pt-40 pb-6">
+      <div class="flex space-x-4">
+        <button class="flex-1 bg-gray-800 text-white py-4 rounded-lg font-medium">Scam Report</button>
+        <button class="flex-1 bg-gray-800 text-white py-4 rounded-lg font-medium">Save Address</button>
+      </div>
+    </div>
+
+    <div class="flex justify-center pb-2">
+      <div class="w-32 h-1 bg-white rounded-full"></div>
+    </div>
+  </div>
+
+  <div class="mt-6">
+    <button id="refreshBtn"
+      class="bg-green-600 hover:bg-green-700 text-white font-medium px-8 py-3 rounded-lg text-lg">🔄 刷新记录</button>
+    <button id="screenshotBtn"
+      class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-lg text-lg">📸 截图保存</button>
+  </div>
+
+  <script>
+    // ✅ 修复1: 添加复制提示函数
+    function showCopySuccess() {
+      const copySuccessEl = document.getElementById('copySuccess');
+      copySuccessEl.classList.add('show');
+      setTimeout(() => {
+        copySuccessEl.classList.remove('show');
+      }, 2000);
+    }
+
+    function arrayBufferToHex(buffer) {
+      return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function generateTxid() {
+      const network = document.getElementById('networkSelect').value;
+      if (network === 'Erc20') {
+        const randomBytes = crypto.getRandomValues(new Uint8Array(32));
+        const hash = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        document.getElementById('txid').innerText = '0x' + hash;
+      } else {
+        const from = document.getElementById('address').value || 'TFromExample';
+        // ✅ 修复2: 改为 T 开头，确保 TRC20 地址格式正确
+        const to = 'TToExample';
+        const amount = document.getElementById('amountTop').value || '-50 USDT';
+        const date = document.getElementById('date').value || new Date().toISOString();
+        const nonce = Math.floor(Math.random() * 1e9).toString();
+        const plain = `${from}|${to}|${amount}|${date}|${nonce}`;
+        const data = new TextEncoder().encode(plain);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        document.getElementById('txid').innerText = arrayBufferToHex(hashBuffer);
+      }
+    }
+
+    function getBeijingTime() {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const beijing = new Date(utc + 8 * 3600000);
+      const year = beijing.getFullYear();
+      const month = String(beijing.getMonth() + 1).padStart(2, '0');
+      const day = String(beijing.getDate()).padStart(2, '0');
+      const hours = String(beijing.getHours()).padStart(2, '0');
+      const minutes = String(beijing.getMinutes()).padStart(2, '0');
+      const seconds = String(beijing.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    }
+
+    function updateAllTimes() {
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const beijing = new Date(utc + 8 * 3600000);
+      const hours = String(beijing.getHours()).padStart(2, '0');
+      const minutes = String(beijing.getMinutes()).padStart(2, '0');
+      const defaultTime = `${hours}:${minutes}`;
+      
+      // 如果输入框为空或未修改，才自动更新显示时间
+      const inputTime = document.getElementById('statusBarTimeInput').value.trim();
+      if (inputTime) {
+        document.getElementById('time').textContent = inputTime;
+      } else {
+        document.getElementById('time').textContent = defaultTime;
+      }
+      
+      document.getElementById('date').value = getBeijingTime();
+    }
+
+    function updateAmount() {
+      const currency = document.getElementById('currencySelect').value;
+      const topValue = document.getElementById('amountTop').value.replace(currency, '').trim();
+      const actualAmount = Math.abs(parseFloat(topValue)) || 0;
+      const network = document.getElementById('networkSelect').value;
+      const feeInput = document.getElementById('networkFeeInput');
+      let fee = 1.00;
+      if (network === 'Erc20') {
+        feeInput.removeAttribute('readonly');
+        document.getElementById('feeLabel').innerText = 'Network Fee';
+        fee = parseFloat(feeInput.value) || 0;
+      } else {
+        document.getElementById('feeLabel').innerText = 'Network fee';
+        feeInput.value = '1.00';
+        feeInput.setAttribute('readonly', true);
+      }
+      document.getElementById('networkFee').innerText = fee.toFixed(2);
+      document.getElementById('amountDisplay').innerText = (actualAmount + fee).toFixed(2) + ' ' + currency;
+      const cleanValue = topValue.replace('-', '').trim();
+      document.getElementById('amountTop').value = `-${cleanValue} ${currency}`;
+    }
+
+    function updateNetworkType() {
+      const network = document.getElementById('networkSelect').value;
+      document.getElementById('networkType').innerText = network;
+      updateAmount();
+      generateTxid();
+    }
+
+    function updateCurrency() {
+      updateAmount();
+    }
+
+    // ✅ 修复3: 改进截图函数，添加异步等待和错误处理
+    async function snapshotPhoneView() {
+      const el = document.getElementById('phoneView');
+
+      const prevRadius = el.style.borderRadius;
+      const prevOverflow = el.style.overflow;
+
+      el.style.borderRadius = '0';
+      el.style.overflow = 'visible';
+
+      try {
+        const dataUrl = await htmlToImage.toPng(el, {
+          cacheBust: true,
+          pixelRatio: 2,     // 高清
+          backgroundColor: '#000' // 背景保持黑色
+        });
+
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = 'withdrawal-details.png';
+        a.click();
+
+        // 显示成功提示
+        showCopySuccess();
+
+      } catch (err) {
+        console.error("截图失败：", err);
+        alert('截图失败，请重试: ' + err.message);
+      } finally {
+        el.style.borderRadius = prevRadius;
+        el.style.overflow = prevOverflow;
+      }
+    }
+
+    window.onload = function () {
+      // 初始化时间和数据
+      updateAllTimes();
+      updateAmount();
+      generateTxid();
+
+      // ✅ 修复7: 设置定时器，每分钟更新一次时间
+      setInterval(updateAllTimes, 60000);
+
+      // 刷新按钮
+      document.getElementById('refreshBtn').addEventListener('click', () => {
+        generateTxid();
+        updateAllTimes();
+        updateAmount();
+      });
+
+      // 金额输入
+      document.getElementById('amountTop').addEventListener('input', updateAmount);
+
+      // 网络选择
+      document.getElementById('networkSelect').addEventListener('change', updateNetworkType);
+
+      // 币种选择
+      document.getElementById('currencySelect').addEventListener('change', updateCurrency);
+
+      // 网络费用输入
+      document.getElementById('networkFeeInput').addEventListener('input', updateAmount);
+
+      // 地址输入
+      document.getElementById('address').addEventListener('input', generateTxid);
+
+      // ✅ 修复4: 改进截图按钮，使用 async 处理
+      document.getElementById('screenshotBtn').addEventListener('click', async () => {
+        await snapshotPhoneView();
+      });
+
+      // ✅ 修复5: Txid 可点击复制
+      document.getElementById('txid').addEventListener('click', function () {
+        const text = this.innerText;
+        if (text !== 'Loading...') {
+          navigator.clipboard.writeText(text).then(() => {
+            showCopySuccess();
+          }).catch(err => {
+            console.error('复制失败:', err);
+          });
+        }
+      });
+
+      // ✅ 新增: Status Bar 时间输入事件
+      document.getElementById('statusBarTimeInput').addEventListener('input', function () {
+        let value = this.value;
+        // 只保留数字和冒号
+        value = value.replace(/[^0-9:]/g, '');
+        // 自动格式化为 HH:MM
+        if (value.length === 2 && !value.includes(':')) {
+          value = value + ':';
+        }
+        this.value = value;
+        
+        // 实时更新显示的时间
+        if (value.length >= 5) {
+          document.getElementById('time').textContent = value;
+        }
+      });
+
+      // Status Bar 时间点击编辑
+      document.getElementById('time').addEventListener('click', function () {
+        document.getElementById('statusBarTimeInput').focus();
+        document.getElementById('statusBarTimeInput').select();
+      });
+    }
+    
+    // ✅ 修复6: 改进 textarea 高度自适应，限制最大高度
+    const addressEl = document.getElementById('address');
+
+    addressEl.addEventListener('input', function () {
+      this.style.height = 'auto'; // 先重置高度
+      // 限制最大高度为 100px
+      const newHeight = Math.min(this.scrollHeight, 100);
+      this.style.height = newHeight + 'px';
+      generateTxid(); // 保留原逻辑
+    });
+  </script>
+</body>
+
+</html>
